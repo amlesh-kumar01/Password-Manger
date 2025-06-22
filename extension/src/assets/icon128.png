@@ -1,0 +1,11 @@
+const icon = document.createElement('canvas');
+icon.width = 128;
+icon.height = 128;
+const ctx = icon.getContext('2d');
+ctx.fillStyle = '#4285F4';
+ctx.fillRect(0, 0, 128, 128);
+ctx.fillStyle = '#FFFFFF';
+ctx.font = 'bold 80px Arial';
+ctx.fillText('P', 40, 90);
+const dataUrl = icon.toDataURL('image/png');
+console.log('Icon 128px generated');

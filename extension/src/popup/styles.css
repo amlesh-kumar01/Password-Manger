@@ -1,0 +1,239 @@
+body {
+  font-family: 'Roboto', sans-serif;
+  width: 350px;
+  height: 500px;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  background-color: #4285F4;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.footer {
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  border-top: 1px solid #eee;
+}
+
+.nav-tabs {
+  display: flex;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.nav-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.nav-tab.active {
+  border-bottom: 2px solid #4285F4;
+  color: #4285F4;
+  font-weight: 500;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+button {
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #3367d6;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e5e5;
+}
+
+.btn-block {
+  width: 100%;
+  display: block;
+}
+
+.card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.password-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.password-item:last-child {
+  border-bottom: none;
+}
+
+.password-info {
+  flex: 1;
+}
+
+.password-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.site-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.username {
+  color: #666;
+  font-size: 13px;
+}
+
+.password-mask {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background-color: #333;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.action-icon {
+  cursor: pointer;
+  color: #666;
+  font-size: 16px;
+}
+
+.action-icon:hover {
+  color: #4285F4;
+}
+
+.google-btn {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.google-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.notification {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.notification.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.search-container {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #999;
+}
+
+.search-input {
+  padding-left: 30px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px 15px;
+  color: #666;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}

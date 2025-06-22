@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Backend Server",
+      "type": "shell",
+      "command": "cd backend && npm run dev",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "Build Extension",
+      "type": "shell",
+      "command": "cd extension && npm run build",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Watch Extension",
+      "type": "shell",
+      "command": "cd extension && npm run dev",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "Install Backend Dependencies",
+      "type": "shell",
+      "command": "cd backend && npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Install Extension Dependencies",
+      "type": "shell",
+      "command": "cd extension && npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Install All Dependencies",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Install Backend Dependencies",
+        "Install Extension Dependencies"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
