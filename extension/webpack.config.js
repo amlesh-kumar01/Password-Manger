@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
+  mode: 'production', // Set mode explicitly to production
   entry: {
     popup: './src/popup/index.js',
     background: './src/background/index.js',
@@ -50,4 +51,13 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.jsx'],
   },
+  optimization: {
+    minimize: false, // Disable minification which uses eval
+    moduleIds: 'named', // Use named module ids for better debugging
+    chunkIds: 'named',
+    splitChunks: {
+      chunks: 'all',
+    }
+  },
+  devtool: false // Disable source maps in production, which can use eval
 };
