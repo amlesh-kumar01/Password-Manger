@@ -9,59 +9,56 @@ const Dashboard = () => {
   const { passwords } = usePasswords();
   const { formData } = useFormData();
   const navigate = useNavigate();
-
   return (
-    <div className="app-container">
-      <div className="header">
-        <h1>Dashboard</h1>
+    <div className="flex flex-col h-full">
+      <div className="bg-blue-600 text-white p-4 text-center shadow-md">
+        <h1 className="text-xl font-bold">Dashboard</h1>
       </div>
       
-      <div className="content">
-        <div className="card">
-          <h2>Welcome, {currentUser?.name || 'User'}!</h2>
-          <p>Manage your passwords and form data securely.</p>
+      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold text-gray-800">Welcome, {currentUser?.name || 'User'}!</h2>
+          <p className="text-gray-600 mt-1">Manage your passwords and form data securely.</p>
         </div>
         
-        <div className="card">
-          <h3>Quick Stats</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', marginTop: '15px' }}>
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-2">Quick Stats</h3>
+          <div className="flex justify-around text-center mt-3">
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4285F4' }}>{passwords.length}</div>
-              <div>Passwords</div>
+              <div className="text-2xl font-bold text-blue-600">{passwords.length}</div>
+              <div className="text-gray-600 text-sm">Passwords</div>
             </div>
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4285F4' }}>{formData.length}</div>
-              <div>Form Profiles</div>
+              <div className="text-2xl font-bold text-blue-600">{formData.length}</div>
+              <div className="text-gray-600 text-sm">Form Profiles</div>
             </div>
           </div>
         </div>
         
-        <div className="card">
-          <h3>Recent Passwords</h3>
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-3">Recent Passwords</h3>
           {passwords.length > 0 ? (
-            <div>
+            <div className="space-y-3">
               {passwords.slice(0, 3).map((password) => (
-                <div key={password._id} className="password-item">
-                  <div className="password-info">
-                    <div className="site-name">{password.website}</div>
-                    <div className="username">{password.username}</div>
+                <div key={password._id} className="flex justify-between items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                  <div>
+                    <div className="font-medium text-gray-800">{password.website}</div>
+                    <div className="text-sm text-gray-600">{password.username}</div>
                   </div>
                 </div>
               ))}
               <button 
-                className="btn-block" 
-                style={{ marginTop: '10px' }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors mt-3"
                 onClick={() => navigate('/passwords')}
               >
                 View All Passwords
               </button>
             </div>
           ) : (
-            <div className="empty-state">
-              <p>No passwords saved yet.</p>
+            <div className="text-center py-3">
+              <p className="text-gray-600 mb-3">No passwords saved yet.</p>
               <button 
-                className="btn-block" 
-                style={{ marginTop: '10px' }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 onClick={() => navigate('/passwords')}
               >
                 Add New Password
@@ -70,32 +67,30 @@ const Dashboard = () => {
           )}
         </div>
         
-        <div className="card">
-          <h3>Recent Form Profiles</h3>
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-3">Recent Form Profiles</h3>
           {formData.length > 0 ? (
-            <div>
+            <div className="space-y-3">
               {formData.slice(0, 3).map((form) => (
-                <div key={form._id} className="password-item">
-                  <div className="password-info">
-                    <div className="site-name">{form.website}</div>
-                    <div className="username">{form.name}</div>
+                <div key={form._id} className="flex justify-between items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                  <div>
+                    <div className="font-medium text-gray-800">{form.website}</div>
+                    <div className="text-sm text-gray-600">{form.name}</div>
                   </div>
                 </div>
               ))}
               <button 
-                className="btn-block" 
-                style={{ marginTop: '10px' }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors mt-3"
                 onClick={() => navigate('/forms')}
               >
                 View All Form Profiles
               </button>
             </div>
           ) : (
-            <div className="empty-state">
-              <p>No form profiles saved yet.</p>
+            <div className="text-center py-3">
+              <p className="text-gray-600 mb-3">No form profiles saved yet.</p>
               <button 
-                className="btn-block" 
-                style={{ marginTop: '10px' }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 onClick={() => navigate('/forms')}
               >
                 Add New Form Profile
@@ -105,22 +100,22 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <div style={{ padding: '15px' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="p-4 bg-white border-t">
+        <div className="flex gap-2">
           <button 
-            className="btn-block" 
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md transition-colors text-sm"
             onClick={() => navigate('/passwords')}
           >
             Passwords
           </button>
           <button 
-            className="btn-block" 
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md transition-colors text-sm"
             onClick={() => navigate('/forms')}
           >
             Forms
           </button>
           <button 
-            className="btn-block btn-secondary" 
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded-md transition-colors text-sm"
             onClick={() => navigate('/settings')}
           >
             Settings

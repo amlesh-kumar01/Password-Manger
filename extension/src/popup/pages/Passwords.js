@@ -106,49 +106,49 @@ const Passwords = () => {
   );
 
   return (
-    <div className="app-container">
-      <div className="header">
-        <h1>Passwords</h1>
+    <div className="flex flex-col h-full">
+      <div className="bg-blue-600 text-white p-4 text-center shadow-md">
+        <h1 className="text-xl font-bold">Passwords</h1>
       </div>
       
-      <div className="nav-tabs">
+      <div className="flex bg-white border-b">
         <div 
-          className="nav-tab"
+          className="flex-1 py-3 px-4 text-center cursor-pointer transition-colors text-gray-600 hover:bg-gray-50"
           onClick={() => navigate('/')}
         >
           Dashboard
         </div>
         <div 
-          className="nav-tab active"
+          className="flex-1 py-3 px-4 text-center cursor-pointer transition-colors border-b-2 border-blue-600 text-blue-600 font-medium"
           onClick={() => navigate('/passwords')}
         >
           Passwords
         </div>
         <div 
-          className="nav-tab"
+          className="flex-1 py-3 px-4 text-center cursor-pointer transition-colors text-gray-600 hover:bg-gray-50"
           onClick={() => navigate('/forms')}
         >
           Forms
         </div>
         <div 
-          className="nav-tab"
+          className="flex-1 py-3 px-4 text-center cursor-pointer transition-colors text-gray-600 hover:bg-gray-50"
           onClick={() => navigate('/settings')}
         >
           Settings
         </div>
       </div>
       
-      <div className="content">
+      <div className="flex-1 p-4 overflow-y-auto space-y-4">
         {error && (
-          <div className="notification error">
+          <div className="bg-red-100 text-red-800 p-3 rounded-md mb-4 text-center text-sm">
             {error}
           </div>
         )}
         
-        <div className="search-container">
+        <div className="mb-4">
           <input
             type="text"
-            className="search-input"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Search passwords..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -156,7 +156,7 @@ const Passwords = () => {
         </div>
         
         <button 
-          className="btn-block" 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
           onClick={togglePasswordForm}
         >
           {showAddForm 
@@ -166,11 +166,11 @@ const Passwords = () => {
         </button>
         
         {showAddForm && (
-          <div className="card" style={{ marginTop: '15px' }}>
-            <h3>{editPasswordId ? 'Edit Password' : 'Add New Password'}</h3>
-            <form onSubmit={editPasswordId ? handleUpdatePassword : handleAddPassword}>
-              <div className="form-group">
-                <label htmlFor="website">Website Name</label>
+          <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">{editPasswordId ? 'Edit Password' : 'Add New Password'}</h3>
+            <form onSubmit={editPasswordId ? handleUpdatePassword : handleAddPassword} className="space-y-4">
+              <div>
+                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">Website Name</label>
                 <input
                   type="text"
                   id="website"
@@ -179,10 +179,11 @@ const Passwords = () => {
                   onChange={handleInputChange}
                   placeholder="e.g. Google"
                   required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="url">URL</label>
+              <div>
+                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">URL</label>
                 <input
                   type="text"
                   id="url"
@@ -190,10 +191,11 @@ const Passwords = () => {
                   value={formData.url}
                   onChange={handleInputChange}
                   placeholder="e.g. https://www.google.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="username">Username / Email</label>
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username / Email</label>
                 <input
                   type="text"
                   id="username"
@@ -202,11 +204,12 @@ const Passwords = () => {
                   onChange={handleInputChange}
                   placeholder="e.g. john@example.com"
                   required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <div style={{ display: 'flex', gap: '5px' }}>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div className="flex gap-2">
                   <input
                     type="password"
                     id="password"
@@ -215,18 +218,19 @@ const Passwords = () => {
                     onChange={handleInputChange}
                     placeholder="Enter password"
                     required
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   <button 
                     type="button" 
                     onClick={generatePassword}
-                    style={{ whiteSpace: 'nowrap' }}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors whitespace-nowrap"
                   >
                     Generate
                   </button>
                 </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="notes">Notes</label>
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <input
                   type="text"
                   id="notes"
@@ -234,9 +238,13 @@ const Passwords = () => {
                   value={formData.notes}
                   onChange={handleInputChange}
                   placeholder="Additional notes"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <button type="submit" className="btn-block">
+              <button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+              >
                 {editPasswordId ? 'Update Password' : 'Save Password'}
               </button>
             </form>
@@ -244,40 +252,43 @@ const Passwords = () => {
         )}
         
         {loading ? (
-          <div className="loading">Loading passwords...</div>
+          <div className="flex justify-center items-center py-4 text-gray-600">
+            <div className="animate-pulse">Loading passwords...</div>
+          </div>
         ) : filteredPasswords.length > 0 ? (
-          <div className="card" style={{ marginTop: '15px' }}>
-            <h3>Saved Passwords</h3>
-            {filteredPasswords.map((password) => (
-              <div key={password._id} className="password-item">
-                <div className="password-info">
-                  <div className="site-name">{password.website}</div>
-                  <div className="username">{password.username}</div>
+          <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Saved Passwords</h3>
+            <div className="space-y-3">
+              {filteredPasswords.map((password) => (
+                <div key={password._id} className="flex justify-between items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                  <div>
+                    <div className="font-medium text-gray-800">{password.website}</div>
+                    <div className="text-sm text-gray-600">{password.username}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleEditPassword(password)}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium py-1 px-3 rounded-md text-sm transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeletePassword(password._id)}
+                      className="bg-red-100 hover:bg-red-200 text-red-800 font-medium py-1 px-3 rounded-md text-sm transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <div className="password-actions">
-                  <button 
-                    onClick={() => handleEditPassword(password)}
-                    style={{ padding: '5px 10px' }}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDeletePassword(password._id)}
-                    style={{ padding: '5px 10px' }}
-                    className="btn-secondary"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="empty-state">
-            <p>No passwords found.</p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-gray-600 mb-3">No passwords found.</p>
             {!showAddForm && (
               <button 
-                className="btn-block" 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 onClick={() => setShowAddForm(true)}
               >
                 Add New Password

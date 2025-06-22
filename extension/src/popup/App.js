@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { MemoryRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Passwords from './pages/Passwords';
@@ -15,8 +15,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="loading">
-        Loading...
+      <div className="flex justify-center items-center h-full text-gray-600">
+        <div className="animate-pulse">Loading...</div>
       </div>
     );
   }
@@ -34,7 +34,7 @@ function App() {
       <AuthProvider>
         <PasswordProvider>
           <FormDataProvider>
-            <div className="app-container">
+            <div className="flex flex-col h-full bg-gray-50">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={
