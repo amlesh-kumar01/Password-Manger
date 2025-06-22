@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Password & Form Manager",
+  "name": "PassVault",
   "version": "1.0.0",
   "description": "Securely manage your passwords and form data",
   "icons": {
