@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Detect regular forms
   detectForms();
   
+  // Monitor forms for changes
+  monitorFormChanges();
+  
   // Add mutation observer to detect dynamically added forms
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -27,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (formsAdded) {
           detectLoginForms();
           detectForms();
+          monitorFormChanges();
         }
       }
     });
@@ -36,7 +40,179 @@ document.addEventListener('DOMContentLoaded', () => {
     childList: true,
     subtree: true
   });
+  
+  // Listen for password and form input changes
+  document.addEventListener('change', handleInputChange);
+  document.addEventListener('blur', handleInputBlur, true);
 });
+
+// Keep track of filled forms and passwords
+const filledInputs = new Set();
+
+// Handle input change events (detects when a user has manually filled a field)
+const handleInputChange = (event) => {
+  const target = event.target;
+  
+  // Only process input elements
+  if (target.tagName !== 'INPUT') return;
+  
+  // Mark this input as filled by the user
+  if (target.value.trim() !== '') {
+    filledInputs.add(target);
+  } else {
+    filledInputs.delete(target);
+  }
+};
+
+// Handle input blur events (when user clicks away from an input)
+const handleInputBlur = (event) => {
+  const target = event.target;
+  
+  // Only process password inputs when they lose focus
+  if (target.tagName === 'INPUT' && target.type === 'password' && target.value.trim() !== '') {
+    // Check if this is part of a login form
+    const form = target.closest('form');
+    if (!form) return;
+    
+    // Find username field
+    let usernameField = null;
+    const inputs = Array.from(form.querySelectorAll('input'));
+    const passwordIndex = inputs.indexOf(target);
+    
+    if (passwordIndex > 0) {
+      // Try to find the username field (usually comes before password)
+      for (let i = passwordIndex - 1; i >= 0; i--) {
+        const input = inputs[i];
+        if ((input.type === 'text' || input.type === 'email') && input.value.trim() !== '') {
+          usernameField = input;
+          break;
+        }
+      }
+    }
+    
+    if (!usernameField) return;
+    
+    // Check if we should prompt to save
+    promptToSavePassword(form, usernameField, target);
+  }
+};
+
+// Create a UI notification that prompts the user to save their credentials
+const promptToSavePassword = (form, usernameField, passwordField) => {
+  // Prevent duplicate prompts
+  if (form.dataset.pwmPrompted === 'true') return;
+  form.dataset.pwmPrompted = 'true';
+  
+  // Create password data
+  const passwordData = {
+    website: document.title || window.location.hostname,
+    url: window.location.href,
+    username: usernameField.value,
+    password: passwordField.value,
+    notes: `Saved from ${window.location.href}`
+  };
+  
+  // Create notification UI
+  const notification = document.createElement('div');
+  notification.className = 'pwm-save-notification';
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 99999;
+    font-family: Arial, sans-serif;
+    max-width: 300px;
+  `;
+  
+  notification.innerHTML = `
+    <div style="margin-bottom: 10px; font-weight: bold; color: #4285F4;">Password Manager Extension</div>
+    <div style="margin-bottom: 10px;">Would you like to save this password for ${passwordData.website}?</div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button id="pwm-save-no" style="padding: 8px 12px; border: 1px solid #ccc; background: #f5f5f5; border-radius: 4px; cursor: pointer;">No</button>
+      <button id="pwm-save-yes" style="padding: 8px 12px; border: none; background: #4285F4; color: white; border-radius: 4px; cursor: pointer;">Save</button>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Add event listeners
+  document.getElementById('pwm-save-yes').addEventListener('click', () => {
+    // Send to background script
+    chrome.runtime.sendMessage({ 
+      action: 'savePassword', 
+      passwordData 
+    }, (response) => {
+      if (response && response.success) {
+        showSuccessMessage('Password saved successfully!');
+      } else {
+        showErrorMessage('Failed to save password.');
+      }
+    });
+    notification.remove();
+  });
+  
+  document.getElementById('pwm-save-no').addEventListener('click', () => {
+    notification.remove();
+  });
+  
+  // Auto-remove after 10 seconds
+  setTimeout(() => {
+    if (document.body.contains(notification)) {
+      notification.remove();
+    }
+  }, 10000);
+};
+
+// Show a temporary success message
+const showSuccessMessage = (message) => {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 99999;
+    font-family: Arial, sans-serif;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+};
+
+// Show a temporary error message
+const showErrorMessage = (message) => {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #F44336;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 99999;
+    font-family: Arial, sans-serif;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+};
 
 // Detect login forms
 const detectLoginForms = () => {
@@ -83,6 +259,119 @@ const detectForms = () => {
       form.addEventListener('submit', handleFormSubmit);
     }
   });
+};
+
+// Monitor form changes to detect multiple fields being filled
+const monitorFormChanges = () => {
+  const forms = document.querySelectorAll('form');
+  
+  forms.forEach(form => {
+    // Skip if already being monitored
+    if (form.dataset.pwmMonitored === 'true') return;
+    form.dataset.pwmMonitored = 'true';
+    
+    // Check inputs when they change
+    const inputFields = form.querySelectorAll('input:not([type="submit"]):not([type="button"]):not([type="hidden"])');
+    let filledCount = 0;
+    
+    inputFields.forEach(input => {
+      input.addEventListener('change', () => {
+        if (input.value.trim() !== '') {
+          filledCount++;
+          
+          // If 3 or more fields are filled and this is not a login form (no password field)
+          if (filledCount >= 3 && !form.querySelector('input[type="password"]') && inputFields.length >= 3) {
+            // This might be a form worth saving
+            const shouldPrompt = !form.dataset.pwmPrompted || form.dataset.pwmPrompted !== 'true';
+            
+            if (shouldPrompt) {
+              promptToSaveForm(form, inputFields);
+            }
+          }
+        }
+      });
+    });
+  });
+};
+
+// Prompt the user to save form data
+const promptToSaveForm = (form, inputFields) => {
+  // Mark form as prompted
+  form.dataset.pwmPrompted = 'true';
+  
+  // Create form fields data
+  const fields = Array.from(inputFields).map(input => ({
+    name: input.id || input.name || `field_${Math.random().toString(36).substr(2, 9)}`,
+    value: input.value,
+    type: input.type,
+    sensitive: input.type === 'email' || (input.name && input.name.toLowerCase().includes('email'))
+  }));
+  
+  // Create form data
+  const formData = {
+    name: `Form for ${document.title || window.location.hostname}`,
+    website: document.title || window.location.hostname,
+    url: window.location.href,
+    fields
+  };
+  
+  // Show prompt after a delay
+  setTimeout(() => {
+    // Create notification UI
+    const notification = document.createElement('div');
+    notification.className = 'pwm-save-notification';
+    notification.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 99999;
+      font-family: Arial, sans-serif;
+      max-width: 300px;
+    `;
+    
+    notification.innerHTML = `
+      <div style="margin-bottom: 10px; font-weight: bold; color: #4285F4;">Password Manager Extension</div>
+      <div style="margin-bottom: 10px;">Would you like to save this form data for ${formData.website}?</div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="pwm-save-form-no" style="padding: 8px 12px; border: 1px solid #ccc; background: #f5f5f5; border-radius: 4px; cursor: pointer;">No</button>
+        <button id="pwm-save-form-yes" style="padding: 8px 12px; border: none; background: #4285F4; color: white; border-radius: 4px; cursor: pointer;">Save</button>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Add event listeners
+    document.getElementById('pwm-save-form-yes').addEventListener('click', () => {
+      // Send to background script
+      chrome.runtime.sendMessage({ 
+        action: 'saveFormData', 
+        formData 
+      }, (response) => {
+        if (response && response.success) {
+          showSuccessMessage('Form data saved successfully!');
+        } else {
+          showErrorMessage('Failed to save form data.');
+        }
+      });
+      notification.remove();
+    });
+    
+    document.getElementById('pwm-save-form-no').addEventListener('click', () => {
+      notification.remove();
+    });
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        notification.remove();
+      }
+    }, 10000);
+  }, 500);
 };
 
 // Add autofill button next to an input field
@@ -225,52 +514,9 @@ const handleFormAutofill = (form) => {
 
 // Handle login form submission
 const handleLoginFormSubmit = (event) => {
-  // Get form data
-  const form = event.target;
-  const passwordField = form.querySelector('input[type="password"]');
-  
-  if (!passwordField) return;
-  
-  // Find username field
-  let usernameField = null;
-  const inputs = Array.from(form.querySelectorAll('input'));
-  const passwordIndex = inputs.indexOf(passwordField);
-  
-  if (passwordIndex > 0) {
-    // Try to find the username field (usually comes before password)
-    for (let i = passwordIndex - 1; i >= 0; i--) {
-      const input = inputs[i];
-      if (input.type === 'text' || input.type === 'email') {
-        usernameField = input;
-        break;
-      }
-    }
-  }
-  
-  if (!usernameField) return;
-  
-  // Create password data
-  const passwordData = {
-    website: document.title || window.location.hostname,
-    url: window.location.href,
-    username: usernameField.value,
-    password: passwordField.value,
-    notes: `Saved from ${window.location.href}`
-  };
-  
-  // Ask user if they want to save the password
-  // In a real extension, we'd show a UI prompt
-  setTimeout(() => {
-    const savePw = confirm('Do you want to save this password?');
-    
-    if (savePw) {
-      // Send to background script
-      chrome.runtime.sendMessage({ 
-        action: 'savePassword', 
-        passwordData 
-      });
-    }
-  }, 500);
+  // No longer needed as we handle password saving on blur
+  // The form will be marked as prompted in the blur handler
+  // This handler remains for backwards compatibility
 };
 
 // Handle regular form submission
@@ -297,17 +543,60 @@ const handleFormSubmit = (event) => {
     fields
   };
   
-  // Ask user if they want to save the form data
-  // In a real extension, we'd show a UI prompt
+  // Create notification UI
+  const notification = document.createElement('div');
+  notification.className = 'pwm-save-notification';
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 99999;
+    font-family: Arial, sans-serif;
+    max-width: 300px;
+  `;
+  
+  notification.innerHTML = `
+    <div style="margin-bottom: 10px; font-weight: bold; color: #4285F4;">Password Manager Extension</div>
+    <div style="margin-bottom: 10px;">Would you like to save this form data for ${formData.website}?</div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button id="pwm-save-form-no" style="padding: 8px 12px; border: 1px solid #ccc; background: #f5f5f5; border-radius: 4px; cursor: pointer;">No</button>
+      <button id="pwm-save-form-yes" style="padding: 8px 12px; border: none; background: #4285F4; color: white; border-radius: 4px; cursor: pointer;">Save</button>
+    </div>
+  `;
+  
   setTimeout(() => {
-    const saveForm = confirm('Do you want to save this form data for future use?');
+    document.body.appendChild(notification);
     
-    if (saveForm) {
+    // Add event listeners
+    document.getElementById('pwm-save-form-yes').addEventListener('click', () => {
       // Send to background script
       chrome.runtime.sendMessage({ 
         action: 'saveFormData', 
         formData 
+      }, (response) => {
+        if (response && response.success) {
+          showSuccessMessage('Form data saved successfully!');
+        } else {
+          showErrorMessage('Failed to save form data.');
+        }
       });
-    }
+      notification.remove();
+    });
+    
+    document.getElementById('pwm-save-form-no').addEventListener('click', () => {
+      notification.remove();
+    });
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        notification.remove();
+      }
+    }, 10000);
   }, 500);
 };

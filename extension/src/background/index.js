@@ -28,6 +28,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ error: error.message }));
     return true; // Indicates async response
   }
+  
+  if (message.action === 'savePassword') {
+    handleSavePassword(message.passwordData)
+      .then(sendResponse)
+      .catch(error => sendResponse({ error: error.message }));
+    return true; // Indicates async response
+  }
 });
 
 // Get passwords for a URL
@@ -142,6 +149,61 @@ const handleSaveFormData = async (formData) => {
     return { success: true, formData: savedFormData };
   } catch (error) {
     console.error('Error saving form data:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Save password to server
+const handleSavePassword = async (passwordData) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    
+    // Encrypt password before sending
+    const encryptedData = {
+      ...passwordData,
+      password: encryptData(passwordData.password)
+    };
+    
+    const response = await fetch(`${API_URL}/passwords`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(encryptedData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to save password');
+    }
+    
+    const savedPassword = await response.json();
+    
+    // Notify user about successful save with a Chrome notification
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: '../assets/icon128.png',
+      title: 'Password Saved',
+      message: `Password for ${passwordData.website} has been saved successfully.`,
+      priority: 2
+    });
+    
+    return { success: true, password: savedPassword };
+  } catch (error) {
+    console.error('Error saving password:', error);
+    
+    // Notify user about error with a Chrome notification
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: '../assets/icon128.png',
+      title: 'Password Save Failed',
+      message: `Could not save password for ${passwordData.website}. Please try again.`,
+      priority: 2
+    });
+    
     return { success: false, error: error.message };
   }
 };
