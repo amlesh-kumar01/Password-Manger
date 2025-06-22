@@ -248,5 +248,32 @@ const setupSync = () => {
   setInterval(syncData, SYNC_INTERVAL);
 };
 
+// Listen for tab updates to check password detection
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Wait for the page to fully load
+  if (changeInfo.status === 'complete' && tab.url && !tab.url.startsWith('chrome://')) {
+    // Wait a bit to make sure content scripts are loaded
+    setTimeout(() => {
+      // Send a message to check if password fields are detected
+      chrome.tabs.sendMessage(tabId, { action: 'checkPasswordDetection' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.log('Error sending message to content script:', chrome.runtime.lastError.message);
+          return;
+        }
+        
+        if (response && response.success) {
+          console.log(`Password fields detected on ${tab.url}:`, response);
+          
+          // If password fields are found, we might want to update the extension icon or badge
+          if (response.found) {
+            chrome.action.setBadgeText({ tabId, text: response.count.toString() });
+            chrome.action.setBadgeBackgroundColor({ tabId, color: '#4285F4' });
+          }
+        }
+      });
+    }, 1000);
+  }
+});
+
 // Initialize extension
 setupSync();

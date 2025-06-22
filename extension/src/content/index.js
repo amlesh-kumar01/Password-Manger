@@ -1,5 +1,65 @@
+// Make sure the script runs for pages that are already loaded
+// or for single-page applications where DOMContentLoaded may have fired already
+console.log('Password Manager Extension: Initial content script execution');
+setTimeout(() => {
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    console.log('Password Manager Extension: Document already loaded, initializing immediately');
+    initializeFormDetection();
+    setupMutationObserver();
+  }
+}, 100);
+
 // Listen for DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Password Manager Extension: Content script loaded');
+  
+  // Initial setup
+  setTimeout(() => {
+    initializeFormDetection();
+  }, 500);
+  
+  // Set up mutation observer to detect dynamically added elements
+  setupMutationObserver();
+});
+
+// Set up mutation observer for dynamic content
+const setupMutationObserver = () => {
+  const observer = new MutationObserver((mutations) => {
+    let shouldReinitialize = false;
+    
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+        // Check if any forms or inputs were added
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'FORM' || 
+              node.nodeName === 'INPUT' || 
+              (node.querySelectorAll && (
+                node.querySelectorAll('form').length > 0 || 
+                node.querySelectorAll('input').length > 0
+              ))) {
+            shouldReinitialize = true;
+          }
+        });
+      }
+    });
+    
+    if (shouldReinitialize) {
+      console.log('Password Manager Extension: New forms or inputs detected');
+      initializeFormDetection();
+    }
+  });
+  
+  // Observe the entire document for changes
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+  
+  console.log('Password Manager Extension: Mutation observer set up');
+};
+
+// Initialize all form detection features
+const initializeFormDetection = () => {
   // Detect login forms
   detectLoginForms();
   
@@ -9,45 +69,74 @@ document.addEventListener('DOMContentLoaded', () => {
   // Monitor forms for changes
   monitorFormChanges();
   
-  // Add mutation observer to detect dynamically added forms
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-        // Check if any forms were added
-        let formsAdded = false;
-        
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeName === 'FORM') {
-            formsAdded = true;
-          } else if (node.querySelectorAll) {
-            const forms = node.querySelectorAll('form');
-            if (forms.length > 0) {
-              formsAdded = true;
-            }
-          }
-        });
-        
-        if (formsAdded) {
-          detectLoginForms();
-          detectForms();
-          monitorFormChanges();
-        }
-      }
-    });
-  });
-  
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  
   // Listen for password and form input changes
-  document.addEventListener('change', handleInputChange);
+  setupGlobalListeners();
+}
+
+// Set up global event listeners
+const setupGlobalListeners = () => {
+  // Remove existing listeners to prevent duplicates
+  document.removeEventListener('input', handleGlobalInputChange);
+  document.removeEventListener('change', handleGlobalInputChange);
+  document.removeEventListener('blur', handleInputBlur, true);
+  
+  // Add listeners
+  document.addEventListener('input', handleGlobalInputChange);
+  document.addEventListener('change', handleGlobalInputChange);
   document.addEventListener('blur', handleInputBlur, true);
-});
+  
+  console.log('Password Manager Extension: Global listeners set up');
+};
 
 // Keep track of filled forms and passwords
 const filledInputs = new Set();
+
+// Handle input change events globally (detects when a user has manually filled a field)
+const handleGlobalInputChange = (event) => {
+  const target = event.target;
+  
+  // Only process input elements
+  if (target.tagName !== 'INPUT') return;
+  
+  // Mark this input as filled by the user
+  if (target.value.trim() !== '') {
+    filledInputs.add(target);
+    
+    // If this is a password field, check if we should prompt to save
+    if (target.type === 'password') {
+      console.log('Password field detected with value');
+      // We'll handle this during blur
+    }
+  } else {
+    filledInputs.delete(target);
+  }
+  
+  // Check if this is part of a form we're monitoring
+  const form = target.closest('form');
+  if (form) {
+    checkFormForSaving(form);
+  }
+};
+
+// Check if a form has enough filled fields to be saved
+const checkFormForSaving = (form) => {
+  // Skip password-only forms (handled separately)
+  if (form.querySelector('input[type="password"]')) {
+    return;
+  }
+  
+  const inputs = form.querySelectorAll('input:not([type="submit"]):not([type="button"]):not([type="hidden"])');
+  const filledFieldsCount = Array.from(inputs).filter(input => input.value.trim() !== '').length;
+  
+  // If 3 or more fields are filled, we might want to save this form
+  if (filledFieldsCount >= 3 && inputs.length >= 3) {
+    const shouldPrompt = !form.dataset.pwmPrompted || form.dataset.pwmPrompted !== 'true';
+    
+    if (shouldPrompt) {
+      promptToSaveForm(form, inputs);
+    }
+  }
+};
 
 // Handle input change events (detects when a user has manually filled a field)
 const handleInputChange = (event) => {
@@ -70,31 +159,65 @@ const handleInputBlur = (event) => {
   
   // Only process password inputs when they lose focus
   if (target.tagName === 'INPUT' && target.type === 'password' && target.value.trim() !== '') {
-    // Check if this is part of a login form
-    const form = target.closest('form');
+    console.log('Password field blur detected with value');
+    
+    // Get the containing form or the closest parent element if no form exists
+    const form = target.closest('form') || target.parentElement;
     if (!form) return;
     
     // Find username field
     let usernameField = null;
-    const inputs = Array.from(form.querySelectorAll('input'));
-    const passwordIndex = inputs.indexOf(target);
     
-    if (passwordIndex > 0) {
-      // Try to find the username field (usually comes before password)
-      for (let i = passwordIndex - 1; i >= 0; i--) {
-        const input = inputs[i];
-        if ((input.type === 'text' || input.type === 'email') && input.value.trim() !== '') {
+    // If we have a form, try to find inputs in the form
+    if (form.tagName === 'FORM') {
+      const inputs = Array.from(form.querySelectorAll('input'));
+      const passwordIndex = inputs.indexOf(target);
+      
+      if (passwordIndex > 0) {
+        // Try to find the username field (usually comes before password)
+        for (let i = passwordIndex - 1; i >= 0; i--) {
+          const input = inputs[i];
+          if ((input.type === 'text' || input.type === 'email')) {
+            usernameField = input;
+            break;
+          }
+        }
+      }
+      
+      // If we couldn't find a username field, try other selectors
+      if (!usernameField) {
+        usernameField = form.querySelector('input[type="email"], input[type="text"][name*="user"], input[type="text"][name*="email"], input[type="text"][id*="user"], input[type="text"][id*="email"]');
+      }
+    } else {
+      // Not in a form, try to find nearby username fields
+      const allInputs = document.querySelectorAll('input[type="text"], input[type="email"]');
+      for (const input of allInputs) {
+        if (input !== target && isNearby(input, target)) {
           usernameField = input;
           break;
         }
       }
     }
     
-    if (!usernameField) return;
+    // Even if we can't find a username field, still offer to save the password
+    // with empty username if site allows it
+    usernameField = usernameField || { value: '' };
     
     // Check if we should prompt to save
     promptToSavePassword(form, usernameField, target);
   }
+};
+
+// Check if two elements are near each other in the DOM
+const isNearby = (elem1, elem2) => {
+  const rect1 = elem1.getBoundingClientRect();
+  const rect2 = elem2.getBoundingClientRect();
+  
+  // Check if elements are within reasonable proximity (e.g., same area of the page)
+  const horizontalDistance = Math.abs(rect1.left - rect2.left);
+  const verticalDistance = Math.abs(rect1.top - rect2.top);
+  
+  return horizontalDistance < 300 && verticalDistance < 200;
 };
 
 // Create a UI notification that prompts the user to save their credentials
@@ -103,11 +226,16 @@ const promptToSavePassword = (form, usernameField, passwordField) => {
   if (form.dataset.pwmPrompted === 'true') return;
   form.dataset.pwmPrompted = 'true';
   
+  console.log('Prompting to save password', {
+    username: usernameField.value,
+    passwordLength: passwordField.value.length
+  });
+  
   // Create password data
   const passwordData = {
     website: document.title || window.location.hostname,
     url: window.location.href,
-    username: usernameField.value,
+    username: usernameField.value || '',
     password: passwordField.value,
     notes: `Saved from ${window.location.href}`
   };
@@ -124,7 +252,7 @@ const promptToSavePassword = (form, usernameField, passwordField) => {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 99999;
+    z-index: 999999;
     font-family: Arial, sans-serif;
     max-width: 300px;
   `;
@@ -166,6 +294,13 @@ const promptToSavePassword = (form, usernameField, passwordField) => {
       notification.remove();
     }
   }, 10000);
+  
+  // Reset the prompt flag after some time to allow for future prompts
+  setTimeout(() => {
+    if (form && form.dataset) {
+      form.dataset.pwmPrompted = 'false';
+    }
+  }, 300000); // 5 minutes
 };
 
 // Show a temporary success message
@@ -216,25 +351,61 @@ const showErrorMessage = (message) => {
 
 // Detect login forms
 const detectLoginForms = () => {
-  const forms = document.querySelectorAll('form');
+  // Look for all password fields, not just those in forms
+  const passwordFields = document.querySelectorAll('input[type="password"]');
   
-  forms.forEach((form) => {
-    const passwordFields = form.querySelectorAll('input[type="password"]');
+  passwordFields.forEach((passwordField) => {
+    console.log('Password field detected:', passwordField);
     
-    if (passwordFields.length > 0) {
-      const isLoginForm = true; // More sophisticated detection would be done in a real extension
+    // Add specific listener to password fields
+    if (!passwordField.dataset.pwmPasswordMonitored) {
+      passwordField.dataset.pwmPasswordMonitored = 'true';
       
-      if (isLoginForm) {
-        console.log('Login form detected');
-        
-        // Add autofill button to password field
-        passwordFields.forEach((passwordField) => {
-          addAutofillButton(passwordField, 'password');
-        });
-        
-        // Add form submission listener
-        form.addEventListener('submit', handleLoginFormSubmit);
-      }
+      // Listen for input changes on the password field
+      passwordField.addEventListener('input', (e) => {
+        if (e.target.value.trim() !== '') {
+          console.log('Password field value changed');
+        }
+      });
+      
+      // Listen for blur events specifically on password fields
+      passwordField.addEventListener('blur', (e) => {
+        if (e.target.value.trim() !== '') {
+          const form = e.target.closest('form') || e.target.parentElement;
+          
+          // Find potential username fields
+          let usernameField = null;
+          
+          // Look for nearby username fields
+          const possibleUsernameFields = document.querySelectorAll('input[type="text"], input[type="email"], input[name*="user"], input[name*="email"], input[id*="user"], input[id*="email"]');
+          
+          for (const field of possibleUsernameFields) {
+            if (field !== e.target && isNearby(field, e.target) && field.value.trim() !== '') {
+              usernameField = field;
+              break;
+            }
+          }
+          
+          // Even if we can't find a username field, still offer to save
+          if (usernameField || confirm('No username detected. Save password with empty username?')) {
+            usernameField = usernameField || { value: '' };
+            promptToSavePassword(form, usernameField, e.target);
+          }
+        }
+      });
+      
+      // Add autofill button to password field
+      addAutofillButton(passwordField, 'password');
+    }
+    
+    // Try to find the form this password field belongs to
+    const form = passwordField.closest('form');
+    if (form && !form.dataset.pwmLoginFormDetected) {
+      form.dataset.pwmLoginFormDetected = 'true';
+      console.log('Login form detected:', form);
+      
+      // Add form submission listener
+      form.addEventListener('submit', handleLoginFormSubmit);
     }
   });
 };
@@ -270,26 +441,16 @@ const monitorFormChanges = () => {
     if (form.dataset.pwmMonitored === 'true') return;
     form.dataset.pwmMonitored = 'true';
     
-    // Check inputs when they change
-    const inputFields = form.querySelectorAll('input:not([type="submit"]):not([type="button"]):not([type="hidden"])');
-    let filledCount = 0;
+    console.log('Monitoring form:', form);
     
+    // Check inputs when they change
+    const inputFields = form.querySelectorAll('input:not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"])');
+    
+    // Set up the change/input listeners for all inputs in the form
     inputFields.forEach(input => {
-      input.addEventListener('change', () => {
-        if (input.value.trim() !== '') {
-          filledCount++;
-          
-          // If 3 or more fields are filled and this is not a login form (no password field)
-          if (filledCount >= 3 && !form.querySelector('input[type="password"]') && inputFields.length >= 3) {
-            // This might be a form worth saving
-            const shouldPrompt = !form.dataset.pwmPrompted || form.dataset.pwmPrompted !== 'true';
-            
-            if (shouldPrompt) {
-              promptToSaveForm(form, inputFields);
-            }
-          }
-        }
-      });
+      input.addEventListener('change', () => checkFormForSaving(form));
+      input.addEventListener('input', () => checkFormForSaving(form));
+      input.addEventListener('blur', () => checkFormForSaving(form));
     });
   });
 };
@@ -599,4 +760,53 @@ const handleFormSubmit = (event) => {
       }
     }, 10000);
   }, 500);
+};
+
+// Debug helper function
+const debugLog = (message, data = null) => {
+  const DEBUG = true; // Set to false in production
+  if (DEBUG) {
+    if (data) {
+      console.log(`[PWM Debug] ${message}`, data);
+    } else {
+      console.log(`[PWM Debug] ${message}`);
+    }
+  }
+};
+
+// Check if extension is loaded correctly
+debugLog('Password Manager Extension loaded successfully');
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  debugLog('Message received in content script', message);
+  
+  if (message.action === 'checkPasswordDetection') {
+    // Report all password fields on the page
+    const passwordFields = document.querySelectorAll('input[type="password"]');
+    sendResponse({
+      success: true,
+      found: passwordFields.length > 0,
+      count: passwordFields.length,
+      details: Array.from(passwordFields).map(field => ({
+        id: field.id,
+        name: field.name,
+        hasValue: field.value.trim() !== '',
+        visible: isVisible(field)
+      }))
+    });
+    return true;
+  }
+  
+  // Default response
+  sendResponse({ success: true, message: 'Content script is active' });
+  return true;
+});
+
+// Check if an element is visible
+const isVisible = (element) => {
+  if (!element) return false;
+  
+  const style = window.getComputedStyle(element);
+  return style.display !== 'none' && style.visibility !== 'hidden' && element.offsetWidth > 0 && element.offsetHeight > 0;
 };
