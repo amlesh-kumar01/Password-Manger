@@ -267,8 +267,7 @@ const promptToSavePassword = (form, usernameField, passwordField) => {
   `;
   
   document.body.appendChild(notification);
-  
-  // Add event listeners
+    // Add event listeners
   document.getElementById('pwm-save-yes').addEventListener('click', () => {
     // Send to background script
     chrome.runtime.sendMessage({ 
@@ -276,9 +275,19 @@ const promptToSavePassword = (form, usernameField, passwordField) => {
       passwordData 
     }, (response) => {
       if (response && response.success) {
-        showSuccessMessage('Password saved successfully!');
+        if (response.offline) {
+          showSuccessMessage('Password saved offline. Will sync when connected.');
+        } else {
+          showSuccessMessage('Password saved successfully!');
+        }
       } else {
-        showErrorMessage('Failed to save password.');
+        const errorMsg = response && response.error 
+          ? `Failed to save password: ${response.error}` 
+          : 'Failed to save password. Please check your connection.';
+        showErrorMessage(errorMsg);
+        
+        // Log detailed error for debugging
+        console.error('Password save error:', response);
       }
     });
     notification.remove();
@@ -338,15 +347,38 @@ const showErrorMessage = (message) => {
     padding: 10px 15px;
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 99999;
+    z-index: 999999;
     font-family: Arial, sans-serif;
+    max-width: 400px;
   `;
   toast.textContent = message;
   document.body.appendChild(toast);
   
+  // Add a close button
+  const closeButton = document.createElement('button');
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+  `;
+  closeButton.textContent = '✕';
+  closeButton.addEventListener('click', () => toast.remove());
+  toast.appendChild(closeButton);
+  
+  // Log the error to console as well
+  console.error('PassVault Error:', message);
+  
+  // Auto-remove after 5 seconds
   setTimeout(() => {
-    toast.remove();
-  }, 3000);
+    if (document.body.contains(toast)) {
+      toast.remove();
+    }
+  }, 5000);
 };
 
 // Detect login forms

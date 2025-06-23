@@ -61,25 +61,48 @@ export const createPassword = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { website, url, username, password, notes, category, deviceId } = req.body;
+    console.log('Creating password with data:', { ...req.body, password: '****' });
     
+    // Extract all possible fields from the request
+    const { 
+      website, 
+      url, 
+      username, 
+      usernameType,
+      usernameField,
+      password, 
+      passwordField,
+      notes, 
+      category, 
+      deviceId,
+      formData
+    } = req.body;
+    
+    // Create new password document
     const newPassword = new Password({
       userId: req.userId,
       website,
       url,
       username,
+      usernameType: usernameType || 'email',
+      usernameField: usernameField || '',
       password,
+      passwordField: passwordField || '',
       notes,
       category: category || 'personal',
-      deviceIds: deviceId ? [deviceId] : []
+      deviceIds: deviceId ? [deviceId] : [],
+      formData: formData || {}
     });
     
+    // Save to database
     await newPassword.save();
+    
+    console.log('Password saved successfully with ID:', newPassword._id);
     
     res.status(201).json(newPassword);
   } catch (err) {
     console.error('Create password error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 };
 
