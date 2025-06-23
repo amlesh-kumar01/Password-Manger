@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  mode: 'production', // Set mode explicitly to production
+  mode: 'production', 
   entry: {
     popup: './src/popup/index.js',
     background: './src/background/index.js',
@@ -12,8 +12,9 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
-    iife: false, // Don't wrap in IIFE which can cause anonymous function errors
-  },  module: {
+    clean: true,
+  },
+  module: {
     rules: [
       {
         test: /\.(js|jsx)$/,
@@ -29,7 +30,8 @@ module.exports = {
             ],
           },
         },
-      },{
+      },
+      {
         test: /\.css$/,
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
@@ -47,22 +49,60 @@ module.exports = {
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'src/manifest.json', to: 'manifest.json' },
+        { 
+          from: 'src/manifest.json', 
+          to: 'manifest.json',
+          transform(content) {
+            // Ensure background is configured correctly for ES modules
+            const manifest = JSON.parse(content.toString());
+            if (manifest.manifest_version === 3) {
+              manifest.background = {
+                ...manifest.background,
+                type: 'module' // Enable ES modules for service worker
+              };
+            }
+            return JSON.stringify(manifest, null, 2);
+          }
+        },
         { from: 'src/assets', to: 'assets' }
       ],
     }),
   ],
   resolve: {
     extensions: ['.js', '.jsx'],
-  },  optimization: {
-    minimize: false, // Disable minification which uses eval
-    moduleIds: 'named', // Use named module ids for better debugging
+  },
+  optimization: {
+    minimize: false, // Avoid minification issues with service workers
+    moduleIds: 'named',
     chunkIds: 'named',
+    // Configure specific optimization for different script types
     splitChunks: {
-      chunks: 'all',
+      cacheGroups: {
+        // Keep background script self-contained
+        backgroundVendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'background-vendor',
+          chunks: chunk => chunk.name === 'background',
+          enforce: true
+        },
+        // Keep content script self-contained
+        contentVendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'content-vendor',
+          chunks: chunk => chunk.name === 'content',
+          enforce: true
+        },
+        // Main popup vendor bundle
+        popupVendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'popup-vendor',
+          chunks: chunk => chunk.name === 'popup',
+          enforce: true
+        }
+      }
     },
-    // Prevent creation of wrapper functions that cause "anonymous function" errors
+    // Avoid wrapper functions that cause issues in service workers
     concatenateModules: false
   },
-  devtool: false // Disable source maps in production, which can use eval
+  devtool: false
 };

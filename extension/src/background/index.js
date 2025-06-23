@@ -1,3 +1,4 @@
+console.log('Background script loaded in index mode');
 import { SYNC_INTERVAL } from '../utils/constants';
 import { 
   handleGetPasswords, 
