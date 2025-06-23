@@ -35,6 +35,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ error: error.message }));
     return true; // Indicates async response
   }
+  
+  // Handle autofill credential requests
+  if (message.action === 'getAutofillCredentials') {
+    handleGetAutofillCredentials(message.urlData)
+      .then(sendResponse)
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Indicates async response
+  }
+  
+  if (message.action === 'recordPasswordUsage') {
+    handleRecordPasswordUsage(message.passwordId, message.formData)
+      .then(sendResponse)
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Indicates async response
+  }
 });
 
 // Get passwords for a URL
@@ -204,6 +219,86 @@ const handleSavePassword = async (passwordData) => {
       priority: 2
     });
     
+    return { success: false, error: error.message };
+  }
+};
+
+// Get matching credentials for autofill
+const handleGetAutofillCredentials = async (urlData) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    
+    // Encode the complex data as query parameters
+    const params = new URLSearchParams();
+    params.append('url', urlData.url);
+    
+    if (urlData.formId) params.append('formId', urlData.formId);
+    if (urlData.formAction) params.append('formAction', urlData.formAction);
+    
+    if (urlData.inputFields && urlData.inputFields.length > 0) {
+      params.append('inputFields', JSON.stringify(urlData.inputFields));
+    }
+    
+    // Make request to autofill endpoint
+    const response = await fetch(`${API_URL}/passwords/autofill?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch autofill credentials');
+    }
+    
+    const result = await response.json();
+    
+    // Decrypt passwords before returning
+    if (result.success && result.data) {
+      const passwords = result.data.map(password => ({
+        ...password,
+        password: decryptData(password.password)
+      }));
+      
+      return { success: true, passwords };
+    }
+    
+    return { success: false, error: 'No matching credentials found' };
+  } catch (error) {
+    console.error('Error getting autofill credentials:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Record that a password was used for autofill
+const handleRecordPasswordUsage = async (passwordId, formData) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    
+    // Make request to record usage
+    const response = await fetch(`${API_URL}/passwords/record-usage/${passwordId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ formData })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to record password usage');
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error recording password usage:', error);
     return { success: false, error: error.message };
   }
 };
