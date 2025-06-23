@@ -58,20 +58,6 @@ const setupMutationObserver = () => {
   console.log('Password Manager Extension: Mutation observer set up');
 };
 
-// Initialize all form detection features
-const initializeFormDetection = () => {
-  // Detect login forms
-  detectLoginForms();
-  
-  // Detect regular forms
-  detectForms();
-  
-  // Monitor forms for changes
-  monitorFormChanges();
-  
-  // Listen for password and form input changes
-  setupGlobalListeners();
-}
 
 // Set up global event listeners
 const setupGlobalListeners = () => {
@@ -794,6 +780,20 @@ const handleFormSubmit = (event) => {
   }, 500);
 };
 
+// Initialize all form detection features
+const initializeFormDetection = () => {
+  // Detect login forms
+  detectLoginForms();
+  
+  // Detect regular forms
+  detectForms();
+  
+  // Monitor forms for changes
+  monitorFormChanges();
+  
+  // Listen for password and form input changes
+  setupGlobalListeners();
+}
 // Debug helper function
 const debugLog = (message, data = null) => {
   const DEBUG = true; // Set to false in production
