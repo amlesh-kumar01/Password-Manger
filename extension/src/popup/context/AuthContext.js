@@ -12,38 +12,65 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper to save token to chrome.storage.local
+  const saveToken = (newToken) => {
+    chrome.storage.local.set({ token: newToken }, () => {
+      console.log('Token saved to chrome.storage.local');
+    });
+  };
+
+  // Helper to remove token from chrome.storage.local
+  const removeToken = () => {
+    chrome.storage.local.remove('token', () => {
+      console.log('Token removed from chrome.storage.local');
+    });
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     const checkAuth = async () => {
       try {
         setLoading(true);
-        const storedToken = localStorage.getItem('token');
         
-        if (storedToken) {
-          // Validate token with backend
-          const response = await axios.get(`${API_URL}/auth/validate`, {
-            headers: {
-              Authorization: `Bearer ${storedToken}`
-            }
-          });
+        // Get token from chrome.storage.local
+        chrome.storage.local.get(['token'], async (result) => {
+          const storedToken = result.token;
           
-          if (response.data.valid) {
-            setToken(storedToken);
-            setCurrentUser(response.data.user);
-          } else {
-            // Token is invalid, clear it
-            localStorage.removeItem('token');
-            setToken(null);
-            setCurrentUser(null);
+          if (storedToken) {
+            // Validate token with backend
+            try {
+              const response = await axios.get(`${API_URL}/auth/validate`, {
+                headers: {
+                  Authorization: `Bearer ${storedToken}`
+                }
+              });
+              
+              if (response.data.valid) {
+                setToken(storedToken);
+                setCurrentUser(response.data.user);
+              } else {
+                // Token is invalid, clear it
+                removeToken();
+                setToken(null);
+                setCurrentUser(null);
+              }
+            } catch (validationErr) {
+              console.error('Token validation error:', validationErr);
+              removeToken();
+              setToken(null);
+              setCurrentUser(null);
+              setError('Session expired. Please log in again.');
+            }
           }
-        }
+          
+          setLoading(false);
+        });
       } catch (err) {
         console.error('Authentication error:', err);
-        localStorage.removeItem('token');
+        removeToken();
         setToken(null);
         setCurrentUser(null);
         setError('Session expired. Please log in again.');
-      } finally {
         setLoading(false);
       }
     };
@@ -62,11 +89,13 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      const { token, user } = response.data;
+      const { token: newToken, user } = response.data;
       
-      setToken(token);
+      // Save token to chrome.storage.local
+      saveToken(newToken);
+      
+      setToken(newToken);
       setCurrentUser(user);
-      localStorage.setItem('token', token);
       
       return true;
     } catch (err) {
@@ -88,11 +117,13 @@ export const AuthProvider = ({ children }) => {
         token: googleToken
       });
       
-      const { token, user } = response.data;
+      const { token: newToken, user } = response.data;
       
-      setToken(token);
+      // Save token to chrome.storage.local
+      saveToken(newToken);
+      
+      setToken(newToken);
       setCurrentUser(user);
-      localStorage.setItem('token', token);
       
       return true;
     } catch (err) {
@@ -116,11 +147,13 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      const { token, user } = response.data;
+      const { token: newToken, user } = response.data;
       
-      setToken(token);
+      // Save token to chrome.storage.local
+      saveToken(newToken);
+      
+      setToken(newToken);
       setCurrentUser(user);
-      localStorage.setItem('token', token);
       
       return true;
     } catch (err) {
@@ -146,15 +179,17 @@ export const AuthProvider = ({ children }) => {
         });
       }
       
-      localStorage.removeItem('token');
+      // Remove token from chrome.storage.local
+      removeToken();
+      
       setToken(null);
       setCurrentUser(null);
       
       return true;
     } catch (err) {
       console.error('Logout error:', err);
-      // Still remove token from local storage and state on client side
-      localStorage.removeItem('token');
+      // Still remove token from storage and state on client side
+      removeToken();
       setToken(null);
       setCurrentUser(null);
       return true;
