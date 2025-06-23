@@ -12,8 +12,8 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
-  },
-  module: {
+    iife: false, // Don't wrap in IIFE which can cause anonymous function errors
+  },  module: {
     rules: [
       {
         test: /\.(js|jsx)$/,
@@ -21,10 +21,15 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-react'],
+            presets: [
+              ['@babel/preset-env', {
+                modules: false // Preserve ES modules
+              }], 
+              '@babel/preset-react'
+            ],
           },
         },
-      },      {
+      },{
         test: /\.css$/,
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
@@ -49,14 +54,15 @@ module.exports = {
   ],
   resolve: {
     extensions: ['.js', '.jsx'],
-  },
-  optimization: {
+  },  optimization: {
     minimize: false, // Disable minification which uses eval
     moduleIds: 'named', // Use named module ids for better debugging
     chunkIds: 'named',
     splitChunks: {
       chunks: 'all',
-    }
+    },
+    // Prevent creation of wrapper functions that cause "anonymous function" errors
+    concatenateModules: false
   },
   devtool: false // Disable source maps in production, which can use eval
 };
